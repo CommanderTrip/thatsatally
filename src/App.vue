@@ -1,3 +1,4 @@
+<!--  eslint-disable-next-line vue/block-lang -->
 <script setup>
 import { ref } from 'vue'
 
@@ -97,12 +98,7 @@ function updateStorageStorage() {
       </div>
     </div>
 
-    <div
-      id="drag"
-      @dragover.prevent.stop="dragging = true"
-      @dragleave.prevent.stop="dragging = false"
-      @drop.prevent="readDragData"
-    >
+    <div id="drag" @drop.prevent="readDragData">
       <p>Drag and drop a previous tally list here or click to upload.</p>
       <input @change="readData" type="file" accept=".json" />
     </div>
