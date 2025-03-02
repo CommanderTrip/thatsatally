@@ -5,9 +5,10 @@ import { ref } from 'vue'
 const storageName = 'soundslikeatally'
 
 const tallyList = localStorage.getItem(storageName)
-  ? JSON.parse(localStorage.getItem(storageName))
+  ? ref(JSON.parse(localStorage.getItem(storageName)))
   : ref({})
 let inputTally = ''
+const oldEditName = ref('')
 
 function incrementTally(name) {
   if (tallyList.value[name] >= 2147483648) {
@@ -16,6 +17,7 @@ function incrementTally(name) {
   }
 
   tallyList.value[name]++
+  updateStorage()
 }
 
 function decrementTally(name) {
@@ -24,6 +26,7 @@ function decrementTally(name) {
   }
 
   tallyList.value[name]--
+  updateStorage()
 }
 
 function addNewTallyTrack(name) {
@@ -32,10 +35,8 @@ function addNewTallyTrack(name) {
   }
 
   tallyList.value[name] = 0
-
-  updateStorageStorage()
-
   inputTally = ''
+  updateStorage()
 }
 
 function readDragData(event) {
@@ -51,11 +52,15 @@ function loadData(fileUrl) {
     .then((res) => res.json())
     .then((tallies) => {
       tallyList.value = tallies
-      updateStorageStorage()
+      updateStorage()
     })
 }
 
 function exportData() {
+  if (Object.keys(tallyList.value).length === 0) {
+    return
+  }
+
   // Create download
   const data = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(tallyList.value))
   const download = document.createElement('a')
@@ -69,49 +74,176 @@ function exportData() {
   document.body.removeChild(download)
 }
 
-function updateStorageStorage() {
+function updateStorage() {
   localStorage.setItem(storageName, JSON.stringify(tallyList.value))
+}
+
+function editVisible(name, becomeVisible) {
+  if (becomeVisible) {
+    document.getElementById(name + '-remove-icon').style.display = 'block'
+  } else {
+    document.getElementById(name + '-remove-icon').style.display = 'none'
+  }
+}
+
+function remove(name) {
+  const newList = { ...tallyList.value }
+  console.log(newList)
+  delete newList[name]
+  tallyList.value = newList
+  updateStorage()
 }
 </script>
 
 <template>
   <main>
-    <h1>That's a Tally</h1>
+    <div class="flex-col preamble">
+      <em>ever degrade yourself...</em>
+      <h1>That's a Tally</h1>
+    </div>
+
     <hr />
 
     <div>
-      <h2>Capturing Tallies for:</h2>
+      <div id="capture-header">
+        <h2>Capturing Tallies for:</h2>
+        <input
+          v-model="inputTally"
+          type="text"
+          placeholder="Add Name"
+          @keypress.enter="addNewTallyTrack(inputTally)"
+        />
+        <button @click="addNewTallyTrack(inputTally, $event)">+</button>
+      </div>
 
       <table>
         <tr v-bind:key="name" v-for="name in Object.keys(tallyList)">
-          <td>{{ name }}</td>
+          <td>
+            <div
+              class="tally-name"
+              @mouseenter="editVisible(name, true)"
+              @mouseleave="editVisible(name, false)"
+            >
+              <img
+                :id="name + '-remove-icon'"
+                class="edit"
+                src="./assets/remove.svg"
+                alt="edit"
+                @click="remove(name)"
+              />
+              <p>{{ name }}</p>
+            </div>
+          </td>
           <td>{{ tallyList[name] }}</td>
           <td>
-            <button @click="incrementTally(name)">+</button>
-            <button @click="decrementTally(name)">-</button>
+            <button class="table-button" @click="incrementTally(name)">+</button>
+            <button class="table-button" @click="decrementTally(name)">-</button>
           </td>
         </tr>
       </table>
-      <div>
-        <input v-model="inputTally" type="text" />
-        <button @click="addNewTallyTrack(inputTally)">+</button>
-      </div>
     </div>
 
-    <div id="drag" @drop.prevent="readDragData">
-      <p>Drag and drop a previous tally list here or click to upload.</p>
-      <input @change="readData" type="file" accept=".json" />
-    </div>
-    <div>
-      <button @click="exportData()">Export JSON</button>
+    <div id="import-export-group" class="flex-col">
+      <div id="drag" class="flex-col" @drop.prevent="readDragData">
+        <img class="full-width" src="./assets/upload.svg" alt="Upload" />
+        <p>Drag and drop a previous tally list here or click to upload.</p>
+        <input @change="readData" type="file" accept=".json" />
+      </div>
+      <div>
+        <button class="table-button" @click="exportData()">Export Tally list</button>
+      </div>
     </div>
   </main>
 </template>
 
 <style scoped>
+main {
+  width: 100%;
+}
+
+table {
+  width: 100%;
+  margin-block: 2rem;
+}
+
+tr {
+  text-align: end;
+}
+
+.preamble > em {
+  margin-bottom: -0.5rem;
+}
+
+.table-button {
+  background-color: transparent;
+  color: white;
+  padding: 1rem 2rem;
+  cursor: pointer;
+}
+
+.table-button:hover {
+  background-color: grey;
+}
+
+.full-width {
+  width: 64px;
+}
+
+.tally-name {
+  display: flex;
+  flex-direction: row;
+}
+
+.tally-name > .edit {
+  margin-right: 1rem;
+  width: 24px;
+  cursor: pointer;
+}
+
+.edit {
+  display: none;
+}
+
+.hidden {
+  display: none;
+}
+
+#capture-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 2.5rem;
+  margin-top: 0.5rem;
+}
+
+#capture-header > input {
+  margin-left: 2rem;
+  line-height: 1.5rem;
+}
+
+#capture-header > button {
+  line-height: 1.5rem;
+}
+
+#import-export-group {
+  align-items: flex-end;
+  margin-top: 2rem;
+}
+
+#import-export-group button {
+  margin-top: 1rem;
+}
+
 #drag {
-  border: 2px solid red;
-  height: 100px;
+  align-items: center;
+  padding: 1rem;
+  border: 2px dashed #808080;
+  width: 100%;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
 }
 
 @media (min-width: 1024px) {
