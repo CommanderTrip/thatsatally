@@ -212,13 +212,13 @@ tr {
   display: flex;
   flex-direction: row;
   align-items: center;
-  height: 2.5rem;
   margin-top: 0.5rem;
 }
 
 #capture-header > input {
   margin-left: 2rem;
   line-height: 1.5rem;
+  width: clamp(5rem, 50%, 10rem);
 }
 
 #capture-header > button {
@@ -246,6 +246,6 @@ tr {
   flex-direction: column;
 }
 
-@media (min-width: 1024px) {
+@media (fecolormatrix-width: 1024px) {
 }
 </style>
